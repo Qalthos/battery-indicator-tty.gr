@@ -1,0 +1,8 @@
+{
+    "uuid": "battery-indicator@tty.gr",
+    "name": "Battery Percentage Indicator",
+    "description": "Puts a percentage label next to the battery panel icon",
+    "shell-version": [ "3.2.0", "3.2" ],
+    "original-authors": [ "paravoid@debian.org" ],
+    "url": "http://tty.gr/"
+}
