@@ -61,6 +61,27 @@ function init(meta) {
         iconBox.child = icon;
     };
 
+    // do the exact opposite: replace the box with the original icon and
+    // destroy the bin/box. i.e. revert the original behavior, useful
+    // when disabling the extension :-)
+    that._replaceBoxWithIcon = function replaceBoxWithIcon() {
+        if (!this._withLabel)
+            return;
+        this._withLabel = false;
+
+        let box = this.actor.get_children()[0];
+        let bin = box.get_children()[0];
+        let label = box.get_children()[1];
+        let icon = bin.child;
+
+        this.actor.remove_actor(box);
+        icon.reparent(this.actor);
+
+        label.destroy();
+        bin.destroy();
+        box.destroy();
+    }
+
     // now, we must ensure that our percentage label is updated
     // hence, create a function that enumerates the devices and, if a battery
     // is found, updates the label with the percentage point
@@ -97,22 +118,21 @@ function enable() {
     if (!that || !that._updateLabel)
         return;
 
-    that._proxy.connect('Changed', Lang.bind(that, that._updateLabel));
+    that._labelSignalId = that._proxy.connect('Changed', Lang.bind(that, that._updateLabel));
     that._updateLabel();
 }
 
 function disable() {
-    let position = Panel.STANDARD_STATUS_AREA_ORDER.indexOf('battery');
+    let that = Main.panel._statusArea['battery'];
+    if (!that)
+        return;
 
-    for (let i = 0; i < Main.panel._rightBox.get_children().length; i++) {
-        if (Main.panel._statusArea['battery'] == Main.panel._rightBox.get_children()[i]._delegate) {
-            position = i + 1;
-            Main.panel._rightBox.get_children()[i].destroy();
-            break;
-        } 
+    if (that._labelSignalId) {
+        that._proxy.disconnect(that._labelSignalId);
+        that._labelSignalId = null;
     }
-    Main.panel._statusArea['battery'] = null;
 
-    let indicator = new Panel.STANDARD_STATUS_AREA_SHELL_IMPLEMENTATION['battery'];
-    Main.panel.addToStatusArea('battery', indicator, position);
+    if (that._replaceBoxWithIcon) {
+        that._replaceBoxWithIcon();
+    }
 }
