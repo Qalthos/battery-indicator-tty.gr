@@ -33,20 +33,19 @@ function init(meta) {
 function enable() {
     // monkey-patch the existing battery icon, called "that" henceforth
     let that = Main.panel._statusArea['battery'];
-
-    if (that._withLabel || that.actor.get_children().length != 1) {
-        // weird state!? reinitialize the original battery applet
-        disable();
+    if (!that) {
+        return;
     }
 
     // add a method to the original power indicator that replaces the single
     // icon with the combo icon/label; this is dynamically called the first time
     // a battery is found in the _updateLabel() method
     that._replaceIconWithBox = function replaceIconWithBox() {
-        let icon = this.actor.get_children()[0];
-
-        // flag this we are enabled
+        if (this._withLabel)
+            return;
         this._withLabel = true;
+
+        let icon = this.actor.get_children()[0];
 
         // remove the initial actor of the single icon
         this.actor.remove_actor(icon);
