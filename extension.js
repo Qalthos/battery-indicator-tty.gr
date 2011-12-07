@@ -27,13 +27,10 @@ const Panel = imports.ui.panel;
 const Main = imports.ui.main;
 
 function init(meta) {
-    // empty
-}
-
-function enable() {
     // monkey-patch the existing battery icon, called "that" henceforth
     let that = Main.panel._statusArea['battery'];
     if (!that) {
+        global.log(meta.uuid + ": Could not find the battery icon, bailing out.")
         return;
     }
 
@@ -93,6 +90,13 @@ function enable() {
             this._label.set_text("");
         }));
     };
+}
+
+function enable() {
+    let that = Main.panel._statusArea['battery'];
+    if (!that || !that._updateLabel)
+        return;
+
     that._proxy.connect('Changed', Lang.bind(that, that._updateLabel));
     that._updateLabel();
 }
