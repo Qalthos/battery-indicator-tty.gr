@@ -27,13 +27,10 @@ const Panel = imports.ui.panel;
 const Main = imports.ui.main;
 
 function init(meta) {
-    // monkey-patch the existing battery icon, called "that" henceforth
-    let that = Main.panel._statusArea['battery'];
-    if (!that) {
-        global.log(meta.uuid + ": Could not find the battery icon, bailing out.")
-        return;
-    }
+    // empty
+}
 
+function monkeypatch(that) {
     // add a method to the original power indicator that replaces the single
     // icon with the combo icon/label; this is dynamically called the first time
     // a battery is found in the _updateLabel() method
@@ -114,10 +111,14 @@ function init(meta) {
 }
 
 function enable() {
+    // monkey-patch the existing battery icon, called "that" henceforth
     let that = Main.panel._statusArea['battery'];
-    if (!that || !that._updateLabel)
+    if (!that)
         return;
 
+    monkeypatch(that);
+
+    // hook our extension to the signal and do the initial update
     that._labelSignalId = that._proxy.connect('Changed', Lang.bind(that, that._updateLabel));
     that._updateLabel();
 }
@@ -127,12 +128,17 @@ function disable() {
     if (!that)
         return;
 
-    if (that._labelSignalId) {
-        that._proxy.disconnect(that._labelSignalId);
-        that._labelSignalId = null;
-    }
-
-    if (that._replaceBoxWithIcon) {
+    try {
+        if (that._labelSignalId) {
+            that._proxy.disconnect(that._labelSignalId);
+        }
         that._replaceBoxWithIcon();
+    } finally {
+        delete that._replaceIconWithBox;
+        delete that._replaceBoxWithIcon;
+        delete that._updateLabel;
+        delete that._labelSignalId;
+        delete that._label;
+        delete that._withLabel;
     }
 }
