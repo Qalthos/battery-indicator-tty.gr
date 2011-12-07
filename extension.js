@@ -53,14 +53,15 @@ function enable() {
         // create a new box layout, composed of a) a "bin", b) the label
         let box = new St.BoxLayout({ name: 'batteryBox' });
         this.actor.add_actor(box);
-        this._iconBox = new St.Bin();
-        box.add(this._iconBox, { y_align: St.Align.MIDDLE, y_fill: false });
+
+        let iconBox = new St.Bin();
+        box.add(iconBox, { y_align: St.Align.MIDDLE, y_fill: false });
 
         this._label = new St.Label();
         box.add(this._label, { y_align: St.Align.MIDDLE, y_fill: false });
 
         // finally, put the original icon into the bin
-        this._iconBox.child = icon;
+        iconBox.child = icon;
     };
 
     // now, we must ensure that our percentage label is updated
@@ -79,7 +80,7 @@ function enable() {
             for (let i = 0; i < devices.length; i++) {
                 let [device_id, device_type, icon, percentage, state, time] = devices[i];
                 if (device_type == Status.power.UPDeviceType.BATTERY || device_id == this._primaryDeviceId) {
-                    percentageText = C_("percent of battery remaining", "%d%%").format(Math.round(percentage));
+                    let percentageText = C_("percent of battery remaining", "%d%%").format(Math.round(percentage));
 
                     if (!this._withLabel) {
                         this._replaceIconWithBox();
