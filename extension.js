@@ -91,21 +91,43 @@ function monkeypatch(that) {
                 }
                 return;
             }
-            let position = 0;
+
+            // for some peculiar reason, there isn't always a primary device,
+            // even on simple laptop configurations with a single battery.
+            // Hence, instead of using GetPrimaryDevice, we enumerate all
+            // devices, and then either pick the primary if found or fallback
+            // on the first battery found
+            let firstMatch, bestMatch;
             for (let i = 0; i < devices.length; i++) {
                 let [device_id, device_type, icon, percentage, state, time] = devices[i];
-                if (device_type == Status.power.UPDeviceType.BATTERY || device_id == this._primaryDeviceId) {
-                    let percentageText = C_("percent of battery remaining", "%d%%").format(Math.round(percentage));
+                if (device_type != Status.power.UPDeviceType.BATTERY)
+                    continue;
 
-                    if (!this._withLabel) {
-                        this._replaceIconWithBox();
-                    }
-                    this._label.set_text(percentageText);
-                    return;
+                if (device_id == this._primaryDeviceId) {
+                    bestMatch = percentage;
+                    // the primary is preferred, no reason to keep searching
+                    break;
                 }
+
+                if (!firstMatch)
+                    firstMatch = percentage;
             }
-            // no battery found... hot-unplugged?
-            this._label.set_text("");
+
+            // if there was no primary device, just pick the first
+            if (!bestMatch)
+                bestMatch = firstMatch;
+
+            if (bestMatch) {
+                let percentageText = C_("percent of battery remaining", "%d%%").format(Math.round(bestMatch));
+
+                if (!this._withLabel) {
+                    this._replaceIconWithBox();
+                }
+                this._label.set_text(percentageText);
+            } else {
+                // no battery found... hot-unplugged?
+                this._label.set_text("");
+            }
         }));
     };
 }
