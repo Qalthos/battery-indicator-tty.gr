@@ -112,7 +112,7 @@ function monkeypatch(that) {
                     }
                     minutes = minutes.substring(0, 2);
 
-                    if (state == 1 || state == 2) {
+                    if (time > 0 && (state == 1 || state == 2)) {
                         match = "%d:%s".format(hours, minutes);
                         if (state == 2) {
                             match = "(" + match + ")";
