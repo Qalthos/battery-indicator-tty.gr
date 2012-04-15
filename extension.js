@@ -97,28 +97,39 @@ function monkeypatch(that) {
             // Hence, instead of using GetPrimaryDevice, we enumerate all
             // devices, and then either pick the primary if found or fallback
             // on the first battery found
-            let firstMatch, bestMatch;
+            let match;
             for (let i = 0; i < devices.length; i++) {
                 let [device_id, device_type, icon, percentage, state, time] = devices[i];
                 if (device_type != Status.power.UPDeviceType.BATTERY)
                     continue;
 
-                if (device_id == this._primaryDeviceId) {
-                    bestMatch = percentage;
-                    // the primary is preferred, no reason to keep searching
-                    break;
-                }
+                if (!match || device_id == this._primaryDeviceId) {
+                    let hours = time / 3600;
+                    let minutes = time / 60 % 60;
+                    if (minutes < 10) {
+                        minutes = "0" + minutes;
+                    }
+                    minutes = minutes.substring(0, 2);
 
-                if (!firstMatch)
-                    firstMatch = percentage;
+                    if (state == 1 || state == 2) {
+                        match = "%d:%s".format(hours, minutes);
+                        if (state == 2) {
+                            match = "(" + match + ")";
+                        }
+                    }
+                    else {
+                        match = "%d%%".format(percentage);
+                    }
+
+                    if (device_id == this._primaryDeviceId) {
+                        // the primary is preferred, no reason to keep searching
+                        break;
+                    }
+                }
             }
 
-            // if there was no primary device, just pick the first
-            if (!bestMatch)
-                bestMatch = firstMatch;
-
-            if (bestMatch) {
-                let percentageText = C_("percent of battery remaining", "%d%%").format(Math.round(bestMatch));
+            if (match) {
+                let percentageText = C_("percent of battery remaining", "%s").format(match);
 
                 if (!this._withLabel) {
                     this._replaceIconWithBox();
