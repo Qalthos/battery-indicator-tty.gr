@@ -97,13 +97,14 @@ function monkeypatch(that) {
             // Hence, instead of using GetPrimaryDevice, we enumerate all
             // devices, and then either pick the primary if found or fallback
             // on the first battery found
-            let match;
+            let match, battStat;
             for (let i = 0; i < devices.length; i++) {
                 let [device_id, device_type, icon, percentage, state, time] = devices[i];
                 if (device_type != Status.power.UPDeviceType.BATTERY)
                     continue;
 
                 if (!match || device_id == this._primaryDeviceId) {
+                    battStat = state;
                     let hours = time / 3600;
                     let minutes = time / 60 % 60;
                     if (minutes < 10) {
@@ -135,6 +136,13 @@ function monkeypatch(that) {
                     this._replaceIconWithBox();
                 }
                 this._label.set_text(percentageText);
+                if (battStat == 1) { //Charging
+                    this._label.set_style_class_name("green");
+                } else if (battStat == 2) { //Discharging
+                    this._label.set_style_class_name("red");
+                } else {
+                    this._label.set_style_class_name("yellow");
+                }
             } else {
                 // no battery found... hot-unplugged?
                 this._label.set_text("");
