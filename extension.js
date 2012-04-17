@@ -97,14 +97,15 @@ function monkeypatch(that) {
             // Hence, instead of using GetPrimaryDevice, we enumerate all
             // devices, and then either pick the primary if found or fallback
             // on the first battery found
-            let match, battStat;
+            let text, bState, bPct;
             for (let i = 0; i < devices.length; i++) {
                 let [device_id, device_type, icon, percentage, state, time] = devices[i];
                 if (device_type != Status.power.UPDeviceType.BATTERY)
                     continue;
 
-                if (!match || device_id == this._primaryDeviceId) {
-                    battStat = state;
+                if (!text || device_id == this._primaryDeviceId) {
+                    bState = state;
+                    bPct = percentage;
                     let hours = time / 3600;
                     let minutes = time / 60 % 60;
                     if (minutes < 10) {
@@ -113,16 +114,17 @@ function monkeypatch(that) {
                     minutes = minutes.substring(0, 2);
 
                     if (time > 0 && (state == 1 || state == 2)) {
-                        match = "%d:%s".format(hours, minutes);
+                        text = "%d:%s".format(hours, minutes);
                         if (state == 2) {
-                            match = "(" + match + ")";
+                            text = "(" + text + ")";
                         }
                     }
                     else if(state == 4) {
-                        match = "Full";
+                        text = "Full";
                     }
                     else {
-                        match = "%d%%".format(percentage);
+                        global.log("Not sure what " + state + " is");
+                        text = "%d%%".format(percentage);
                     }
 
                     if (device_id == this._primaryDeviceId) {
@@ -132,19 +134,19 @@ function monkeypatch(that) {
                 }
             }
 
-            if (match) {
-                let percentageText = C_("percent of battery remaining", "%s").format(match);
+            if (text) {
+                let percentageText = C_("percent of battery remaining", "%s").format(text);
 
                 if (!this._withLabel) {
                     this._replaceIconWithBox();
                 }
                 this._label.set_text(percentageText);
-                if (battStat == 1 || battStat == 4) { //Charging
+                if (bPct > 60) { //Charging
                     this._label.set_style_class_name("green");
-                } else if (battStat == 2) { //Discharging
-                    this._label.set_style_class_name("red");
-                } else {
+                } else if (bPct > 25) { //Discharging
                     this._label.set_style_class_name("yellow");
+                } else {
+                    this._label.set_style_class_name("red");
                 }
             } else {
                 // no battery found... hot-unplugged?
