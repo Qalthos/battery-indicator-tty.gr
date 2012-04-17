@@ -118,6 +118,9 @@ function monkeypatch(that) {
                             match = "(" + match + ")";
                         }
                     }
+                    else if(state == 4) {
+                        match = "Full";
+                    }
                     else {
                         match = "%d%%".format(percentage);
                     }
@@ -136,7 +139,7 @@ function monkeypatch(that) {
                     this._replaceIconWithBox();
                 }
                 this._label.set_text(percentageText);
-                if (battStat == 1) { //Charging
+                if (battStat == 1 || battStat == 4) { //Charging
                     this._label.set_style_class_name("green");
                 } else if (battStat == 2) { //Discharging
                     this._label.set_style_class_name("red");
