@@ -100,42 +100,39 @@ function monkeypatch(that) {
             // Hence, instead of using GetPrimaryDevice, we enumerate all
             // devices, and then either pick the primary if found or fallback
             // on the first battery found
-            let text, bState, bPct;
+            let text = [], bState, bPct = [], sumPct=0;
             for (let i = 0; i < devices.length; i++) {
                 let [device_id, device_type, icon, percentage, state, time] = devices[i];
+
                 if (device_type != Status.power.UPDeviceType.BATTERY)
                     continue;
 
-                if (!text || device_id == this._primaryDeviceId) {
-                    bState = state;
-                    bPct = percentage;
-                    let hours = time / 3600;
-                    let minutes = time / 60 % 60;
-                    if (minutes < 10) {
-                        minutes = "0" + minutes;
-                    }
-                    minutes = minutes.substring(0, 2);
+                bState = state;
+                bPct.push(percentage);
+                sumPct += percentage;
+                let hours = time / 3600;
+                let minutes = Math.floor(time / 60 % 60);
+                if (minutes < 10) {
+                    minutes = "0" + minutes;
+                }
 
-                    if (time > 0 && (state == 1 || state == 2)) {
-                        text = "%d:%s".format(hours, minutes);
-                        if (state == 2) {
-                            text = "(" + text + ")";
-                        }
+                if (time > 0 && (state == 1 || state == 2)) {
+                    let timeString = "%d:%s".format(hours, minutes);
+                    if (state == 2) {
+                        timeString = ("(" + timeString + ")");
                     }
-                    else if(state == 4) {
-                        text = "Full";
-                    }
-                    else {
-                        global.log("Not sure what " + state + " is");
-                        text = "%d%%".format(percentage);
-                    }
-
-                    if (device_id == this._primaryDeviceId) {
-                        // the primary is preferred, no reason to keep searching
-                        break;
-                    }
+                    text.push(timeString);
+                }
+                else if(state == 4) {
+                    text.push("Full");
+                }
+                else {
+                    log("Not sure what " + state + " is");
+                    text.push("%d%%".format(percentage));
                 }
             }
+
+            bPct = sumPct / bPct.length;
 
             if (text) {
                 let percentageText = C_("percent of battery remaining", "%s").format(text);
