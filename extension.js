@@ -84,8 +84,9 @@ function monkeypatch(that) {
     that._updateLabel = function updateLabel() {
         this._proxy.GetDevicesRemote(Lang.bind(this, function(devices, error) {
             if (error) {
+                log(error);
                 if (this._withLabel) {
-                    this._label.set_text("");
+                    this._label.set_text("Error");
                 }
                 return;
             }
