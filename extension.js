@@ -169,6 +169,7 @@ function enable() {
 
     // hook our extension to the signal and do the initial update
     that._labelSignalId = that._proxy.connect('g-properties-changed', Lang.bind(that, that._updateLabel));
+    that._replaceIconWithBox();
     that._updateLabel();
 }
 
