@@ -153,7 +153,7 @@ function monkeypatch(that) {
                 }
             } else {
                 // no battery found... hot-unplugged?
-                this._label.set_text("");
+                this._label.set_text("Not found");
             }
         }));
     };
