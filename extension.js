@@ -91,6 +91,10 @@ function monkeypatch(that) {
                 return;
             }
 
+            // It seems to be a collection containing a single collection...
+            // not sure why
+            devices=devices[0];
+
             // for some peculiar reason, there isn't always a primary device,
             // even on simple laptop configurations with a single battery.
             // Hence, instead of using GetPrimaryDevice, we enumerate all
