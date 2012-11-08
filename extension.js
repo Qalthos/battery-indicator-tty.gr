@@ -161,19 +161,19 @@ function monkeypatch(that) {
 
 function enable() {
     // monkey-patch the existing battery icon, called "that" henceforth
-    let that = Main.panel._statusArea['battery'];
+    let that = Main.panel.statusArea['battery'];
     if (!that)
         return;
 
     monkeypatch(that);
 
     // hook our extension to the signal and do the initial update
-    that._labelSignalId = that._proxy.connect('Changed', Lang.bind(that, that._updateLabel));
+    that._labelSignalId = that._proxy.connect('g-properties-changed', Lang.bind(that, that._updateLabel));
     that._updateLabel();
 }
 
 function disable() {
-    let that = Main.panel._statusArea['battery'];
+    let that = Main.panel.statusArea['battery'];
     if (!that)
         return;
 
