@@ -26,9 +26,7 @@ const Status = imports.ui.status;
 const Panel = imports.ui.panel;
 const Main = imports.ui.main;
 
-function init(meta) {
-    // empty
-}
+function init() {}
 
 function monkeypatch(that) {
     // add a method to the original power indicator that replaces the single
