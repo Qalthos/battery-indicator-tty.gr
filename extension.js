@@ -43,17 +43,23 @@ function monkeypatch(that) {
         this.actor.remove_actor(icon);
 
         // create a new box layout, composed of a) a "bin", b) the label
-        let box = new St.BoxLayout({ name: 'batteryBox' });
-        this.actor.add_actor(box);
+        this._box = new St.BoxLayout({ name: 'batteryBox' });
+        this.actor.add_actor(this._box);
 
         let iconBox = new St.Bin();
-        box.add(iconBox, { y_align: St.Align.MIDDLE, y_fill: false });
-
-        this._label = new St.Label();
-        box.add(this._label, { y_align: St.Align.MIDDLE, y_fill: false });
+        this._box.add(iconBox, { y_align: St.Align.MIDDLE, y_fill: false });
 
         // finally, put the original icon into the bin
         iconBox.child = icon;
+    };
+
+    that._addLabelToBox = function addLabelToBox(text, color) {
+        let label = new St.Label();
+        label.set_text(text);
+        if(color) {
+            label.set_style_class_name(color);
+        }
+        this._box.add(label, { y_align: St.Align.MIDDLE, y_fill: false });
     };
 
     // do the exact opposite: replace the box with the original icon and
@@ -66,14 +72,12 @@ function monkeypatch(that) {
 
         let box = this.actor.get_children()[0];
         let bin = box.get_children()[0];
-        let label = box.get_children()[1];
         let icon = bin.child;
 
         this.actor.remove_actor(box);
         icon.reparent(this.actor);
 
-        label.destroy();
-        bin.destroy();
+        box.foreach(destroy, null);
         box.destroy();
     }
 
@@ -83,10 +87,14 @@ function monkeypatch(that) {
     // (code heavily borrowed from ui.status.power)
     that._updateLabel = function updateLabel() {
         this._proxy.GetDevicesRemote(Lang.bind(this, function(devices, error) {
+            while(this._box.get_children().length > 1) {
+                this._box.remove_actor(this._box.get_children()[1]);
+            }
+
             if (error) {
                 log(error);
                 if (this._withLabel) {
-                    this._label.set_text("Error");
+                    this._addLabelToBox("Error", 'red');
                 }
                 return;
             }
@@ -100,7 +108,7 @@ function monkeypatch(that) {
             // Hence, instead of using GetPrimaryDevice, we enumerate all
             // devices, and then either pick the primary if found or fallback
             // on the first battery found
-            let text = [], bState, bPct = [], sumPct=0;
+            let text, bState, bPct;
             for (let i = 0; i < devices.length; i++) {
                 let [device_id, device_type, icon, percentage, state, time] = devices[i];
 
@@ -108,49 +116,46 @@ function monkeypatch(that) {
                     continue;
 
                 bState = state;
-                bPct.push(percentage);
-                sumPct += percentage;
+                bPct = percentage;
                 let hours = time / 3600;
                 let minutes = Math.floor(time / 60 % 60);
                 if (minutes < 10) {
                     minutes = "0" + minutes;
                 }
 
-                if (time > 0 && (state == 1 || state == 2)) {
-                    let timeString = "%d:%s".format(hours, minutes);
-                    if (state == 2) {
-                        timeString = ("(" + timeString + ")");
+                if(state == 1 || state == 2) {
+                    if(time == 0) {
+                        text = "%d%%".format(percentage);
+                    } else {
+                        text = "%d:%s".format(hours, minutes);
+                        if (state == 2) {
+                            text = ("(" + text + ")");
+                        }
                     }
-                    text.push(timeString);
-                }
-                else if(state == 4) {
-                    text.push("Full");
-                }
-                else {
+                } else if(state == 3) {
+                    text = "Empty";
+                } else if(state == 4) {
+                    text = "Full";
+                } else {
                     log("Not sure what " + state + " is");
-                    text.push("%d%%".format(percentage));
+                    text = "%d%%".format(percentage);
                 }
-            }
-
-            bPct = sumPct / bPct.length;
-
-            if (text) {
-                let percentageText = C_("percent of battery remaining", "%s").format(text);
 
                 if (!this._withLabel) {
                     this._replaceIconWithBox();
                 }
-                this._label.set_text(percentageText);
+
                 if (bPct > 60) { //Charging
-                    this._label.set_style_class_name("green");
+                    this._addLabelToBox(text, "green");
                 } else if (bPct > 25) { //Discharging
-                    this._label.set_style_class_name("yellow");
+                    this._addLabelToBox(text, "yellow");
                 } else {
-                    this._label.set_style_class_name("red");
+                    this._addLabelToBox(text, "red");
                 }
-            } else {
+            }
+            if(devices.length == 0) {
                 // no battery found... hot-unplugged?
-                this._label.set_text("Not found");
+                this._addLabelToBox("Not found", 'orange');
             }
         }));
     };
